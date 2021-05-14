@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script>
+
+function updateTime() {
+  var d = new Date();
+
+  date = [ d.getFullYear(),
+           ('0' + (d.getMonth() + 1)).slice(-2),
+           ('0' + d.getDate()).slice(-2)
+  ].join('-');
+
+  document.getElementById("info").innerHTML = "Date: " + date;
+
+  return date;
+}
+
+function displayImage(x)
+{
+  //displays an image
+  var d=$('#display');
+
+  $.ajax({
+    url : x,
+    processData : false,
+  }).always(function(){
+     $("#display").html( "<img id='displayimg' width='400' src='"+ x +"'/>" );
+  });
+}
+
+function displayAllTodaysImages()
+{
+  var date=updateTime();
+  var folder = "www-data/"+date;
+  logMessage("Displaying images in "+folder);
+  $("#display").html( "<div id='displayimg'/>")
+ 
+  $.ajax({
+      url : folder,
+      success: function (data) {      
+      $(data).find('a').attr("href", function (i, val) {
+      if( val.match(/\.(jpe?g|png|gif)$/) ) {
+        var floc=folder+val.replace('./','/');
+        $("#displayimg").append( "<img width='150' src='"+ floc +"'/>" );
+        if(i>0 && i%4==0) {
+          $("#display").append("<br/>");
+        }
+     }
+    });
+   }
+  });
+}
+
+function logMessage(x)
+{
+  //logs a message to the page
+  document.getElementById("console").innerHTML = x;
+}
+
+
+function runCamera(cmd)
+{
+  //get time string to force update of the image in the page
+  var n = updateTime();
+
+  var nphotos = document.getElementById("nphotos").value;
+  var delay   = document.getElementById("delay").value;
+
+  //run the camera and update the image link with the data stamp
+  $.ajax({
+        url:"php/runCamera.php",
+        type: "POST",
+        data: {"cmd": cmd, "nphotos" : nphotos , "delay" : delay },
+        success:function(result){
+           var obj=$.parseJSON(result);
+           displayImage(obj.file+"?"+n);
+           logMessage("Shell command: " + obj.shcmd + "<br/>Output:" + obj.err);
+        }
+  });
+}
+
+function runStream(cmd)
+{
+  //get time string to force update of the image in the page
+  var n = updateTime();
+
+  var state = document.getElementById("stream_state").value;  
+
+  $("#display").html( "<div id='displayimg'/>")
+  $("#displayimg").html("<iframe src='http://naturerpi.home:8081' height='480' width='640'/>");  
+  $("#display").append("<br/>");
+
+  //run the camera and update the image link with the data stamp
+  $.ajax({
+        url:"php/runStream.php",
+        type: "POST",
+        data: {"cmd": cmd, "stream_state" : state},
+        success:function(result){
+           logMessage("Shell command: " + obj.shcmd + "<br/>Output:" + obj.err);
+        }
+  }); 
+  
+}
+
+function clearDisplay()
+{
+  //removes the image display
+  var el = document.getElementById('displayimg');
+  el.parentNode.removeChild(el);
+  logMessage("Display cleared");
+}
+
+</script>
+
+</head>
+
+<body onload="updateTime()">
+
+<table>
+  
+  <tr id="main">
+    <td valign="top" align="left" id="commands">
+      <button class="button" onclick="runStream()"><div id="stream_state"><b>Run</b></div><b>stream</b></button>
+      <br/>
+      <button class="button" onclick="runCamera('capture')"><b>Picture</b></button>
+      <select id="nphotos" name="nphotos" form="nphotos" class="button">
+	<option value="1" selected="selected">1 photos</option>
+	<option value="5">5 photos</option>
+	<option value="10">10 photos</option>
+      </select>
+      <select id="delay" name="delay" form="delay" class="button">
+	<option value="100">100 ms</option>
+	<option value="250" selected="selected">250 ms</option>
+	<option value="500">500 ms</option>
+	<option value="1000">1 s</option>
+      </select>
+      <br/>
+      <button class="button" onclick="clearDisplay()"><b>Clear</b></button><br/>
+      <button class="button" onclick="displayAllTodaysImages()"><b>See pics</b></button><br/>
+    </td>
+    <td valign="top" align="center" id="display">
+    </td>
+  </tr>
+
+  <tr>
+    <td valign="top" align="left" colspan="2" id="info"></td>
+  </tr>
+  
+  <tr>
+    <td valign="top" align="left" colspan="2" id="console"></td>
+  </tr>
+
+</table>
+
+</body>
+</html>
