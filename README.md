@@ -14,3 +14,11 @@ A folder www-data to store the photos is needed and some permissions need to be 
 (I have to dig what i did in practice - i don't remember any longer)
 
 
+## Theremin
+
+Start sonic-pi load and run the `sonicpi_liveloop.rb`
+From the terminal run the reader of the ultrasonic sensor
+
+```
+python runTheremin.py
+```
